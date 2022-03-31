@@ -1,5 +1,6 @@
 package com.kl.kl_core.databases
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.kl.kl_core.utils.KLutils
 import oracle.jdbc.OracleTypes
 import java.sql.ResultSet
@@ -28,32 +29,30 @@ class EkttDevDatabase : AbstractDatabase() {
         this.release()
     }
 
-    fun getThueSuat(): ResultSet? {
+    fun getThueSuat(): JsonNode? {
         var resultSet: ResultSet? = null
+        var jsonNode: JsonNode? = null
         try {
             this.begin()
-            this.callableStatement = this.conn?.prepareCall("{call PKG_KT_DM_CHUNG.SP_SELECTITEM_KT_DM_THUESUAT(?)}")
+            this.callableStatement = this.conn?.prepareCall(
+                "{call PKG_KT_DM_CHUNG.SP_SELECTITEM_KT_DM_THUESUAT(?)}"
+            )
             this.callableStatement?.registerOutParameter("V_CURSOR", OracleTypes.CURSOR)
             this.callableStatement?.executeUpdate()
             resultSet = this.callableStatement?.getObject("V_CURSOR") as ResultSet?
             println("resultSet: $resultSet")
-            if (resultSet != null) {
-                while (resultSet.next()) {
-                    println(
-                        "ID: ${resultSet.getInt("ID")}; " +
-                                "MA: ${resultSet.getString("MA")}; " +
-                                "TEN: ${resultSet.getString("TEN")}"
-                    )
-                }
-            }
+
+            jsonNode = KLutils.convertToJson(resultSet)
+            println("jsonNode: $jsonNode")
         }
         catch (e: Exception){
             e.printStackTrace()
             this.rollback()
         }
         finally {
+            if (!resultSet?.isClosed!!) resultSet?.close()
             this.release()
         }
-        return  resultSet
+        return  jsonNode
     }
 }
