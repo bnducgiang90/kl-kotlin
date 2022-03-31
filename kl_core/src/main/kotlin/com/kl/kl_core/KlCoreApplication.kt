@@ -20,6 +20,8 @@ fun main(args: Array<String>) {
     println("--------------EkttDevDatabase------------------")
     val ekttDev = EkttDevDatabase()
     ekttDev.printConn()
+    println("--------------EkttDevDatabase.getThueSuat------------------")
+    ekttDev.getThueSuat()
 
     println("--------------TvanDBTestDatabase------------------")
     val tvanTestDB = TvanDBTestDatabase()

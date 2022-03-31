@@ -1,6 +1,7 @@
 package com.kl.kl_core.databases
 
 import com.kl.kl_core.utils.KLutils
+import java.sql.CallableStatement
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
@@ -10,9 +11,10 @@ import java.util.Properties
 abstract class AbstractDatabase {
     protected lateinit var dbKey: String
     protected var isCreatePoll: Boolean = true
+    protected var conn: Connection? = null
     protected var preparedStmt: PreparedStatement? = null
     protected var stmt: Statement? = null
-    protected var conn: Connection? = null
+    protected var callableStatement: CallableStatement? = null
 
     private fun beginSession() {
         if (this.conn == null || this.conn!!.isClosed) {
@@ -41,6 +43,7 @@ abstract class AbstractDatabase {
     protected fun commit() {
         if (this.stmt != null) this.stmt!!.close()
         if (this.preparedStmt != null) this.preparedStmt!!.close()
+        if (this.callableStatement != null) this.callableStatement!!.close()
         if (this.conn != null) {
             this.conn?.commit()
             this.conn = null
@@ -50,6 +53,7 @@ abstract class AbstractDatabase {
     protected fun rollback() {
         if (this.stmt != null) this.stmt!!.close()
         if (this.preparedStmt != null) this.preparedStmt!!.close()
+        if (this.callableStatement != null) this.callableStatement!!.close()
         if (this.conn != null) {
             this.conn?.rollback()
             this.conn = null
@@ -59,6 +63,7 @@ abstract class AbstractDatabase {
     protected fun release() {
         if (this.stmt != null) this.stmt!!.close()
         if (this.preparedStmt != null) this.preparedStmt!!.close()
+        if (this.callableStatement != null) this.callableStatement!!.close()
         if (this.conn != null) {
             this.conn!!.close()
             this.conn = null
