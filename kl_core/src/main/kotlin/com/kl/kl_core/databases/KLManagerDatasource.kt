@@ -1,22 +1,19 @@
 package com.kl.kl_core.databases
 
+import com.kl.kl_core.utils.KLutils
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import com.zaxxer.hikari.pool.HikariPool
 import org.springframework.beans.DirectFieldAccessor
-import java.io.IOException
 import java.sql.Connection
 import java.time.Duration
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.sql.DataSource
 
 
 class KLManagerDatasource {
     companion object {
-        private val mapDS: HashMap<String, KLDatasource> = HashMap()
         private val DB_POOLMAP: ConcurrentHashMap<String, DataSource> = ConcurrentHashMap<String, DataSource>()
-        private var prop: Properties? = null
 
         @Synchronized
         @Throws(Exception::class)
@@ -28,7 +25,7 @@ class KLManagerDatasource {
             val dataSource = DB_POOLMAP[dbName]
             println("Max size: ${(dataSource as HikariDataSource).maximumPoolSize}" +
                     "poolName: ${dataSource.poolName}" +
-                    "Conn Actived: ${(DirectFieldAccessor(dataSource).getPropertyValue("pool") as HikariPool?)?.activeConnections}"
+                    "Conn Active: ${(DirectFieldAccessor(dataSource).getPropertyValue("pool") as HikariPool?)?.activeConnections}"
             )
             return dataSource!!.connection
         }
@@ -44,7 +41,7 @@ class KLManagerDatasource {
 
         @Throws(Exception::class)
         private fun getHikariConfig(dbName: String): HikariConfig? {
-            val properties = getProperties()
+            val properties = KLutils.getProperties()
             if (properties == null || properties["$dbName.jdbcUrl"] == null) {
                 throw Exception("Database not defined")
             }
@@ -99,62 +96,5 @@ class KLManagerDatasource {
 
             return hikaConfig
         }
-
-        // read the properties file to get the credentials of databases
-        private fun getProperties(): Properties? {
-            //return the existing properties if loaded earlier
-            if (prop != null) {
-                return prop
-            }
-            println("Loading the configuration File")
-            val propertiesFileName = "application.properties"
-            try {
-                KLManagerDatasource::class.java.getClassLoader().getResourceAsStream(propertiesFileName).use { istream ->
-                    val properties = Properties()
-                    properties.load(istream)
-                    prop = properties
-                    return properties
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                return null
-            }
-        }
-    }
-
-    @Throws(Exception::class)
-    private fun getConnection(dbKey: String): Connection? {
-        if (!mapDS.containsKey(dbKey)) {
-            val configDB: KLConfigDB = KLConfigDB(dbKey, "", "", "", "") // sau sẽ đọc từ File
-            this.createDS(configDB)
-        }
-        return mapDS.get(dbKey)?.hikariDataSource?.connection
-    }
-
-    private fun createDS(configDB: KLConfigDB) {
-        val klDS: KLDatasource = KLDatasource(configDB)
-        mapDS.put(configDB.dbKey, klDS)
-    }
-
-}
-
-class KLDatasource {
-    private val hikaConfig: HikariConfig? = HikariConfig()
-    val hikariDataSource: HikariDataSource?
-
-    constructor(configDB: KLConfigDB) {
-        hikaConfig?.jdbcUrl = configDB.dbUrl
-        hikaConfig?.driverClassName = configDB.dbDriver
-        hikaConfig?.username = configDB.dbUserName
-        hikaConfig?.password = configDB.dbPassword
-        hikariDataSource = HikariDataSource(hikaConfig)
     }
 }
-
-class KLConfigDB(
-        val dbKey: String,
-        var dbDriver: String?,
-        val dbUrl: String,
-        val dbUserName: String,
-        val dbPassword: String
-)
